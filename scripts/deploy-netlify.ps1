@@ -19,6 +19,9 @@ Get-Content ".env" | ForEach-Object {
         $key = $line.Substring(0, $line.IndexOf("=")).Trim()
         $val = $line.Substring($line.IndexOf("=") + 1).Trim().Trim('"')
         if ($key -and $val) {
+            if ($key -eq "NEXT_PUBLIC_APP_URL") {
+                $val = "https://itimaapitambra.netlify.app"
+            }
             Write-Host "    + $key" -ForegroundColor Green
             npx --yes netlify env:set $key $val 2>$null
         }

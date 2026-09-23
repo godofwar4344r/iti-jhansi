@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { RetestStatus, TestStatus } from "@prisma/client";
 
 import { requireAdmin } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, isDatabaseOnline } from "@/lib/prisma";
 import { parseListFilter } from "@/lib/search-params";
 import { OCCUPATIONS, OCCUPATION_LABELS } from "@/lib/constants";
 import { FilterBar } from "@/components/admin/filter-bar";
@@ -43,45 +43,81 @@ export default async function AdminRetestsPage({
   const page = filter.page ?? 1;
   const perPage = filter.perPage ?? 10;
 
-  const [rows, total, pendingCount] = await Promise.all([
-    prisma.retestRequest.findMany({
-      where,
-      // Pending first so the queue is actionable, then newest.
-      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-      skip: (page - 1) * perPage,
-      take: perPage,
-      select: {
-        id: true,
-        userId: true,
-        status: true,
-        reason: true,
-        adminNote: true,
-        occupation: true,
-        createdAt: true,
-        reviewedAt: true,
-        consumedAt: true,
-        user: {
+  let rows: any[] = [];
+  let total = 0;
+  let pendingCount = 0;
+
+  if (!(await isDatabaseOnline())) {
+    const mock = (await import("@/lib/mock-data")).getMockRetests();
+    rows = mock.map((m) => ({
+      ...m,
+      consumedAt: null,
+      user: { ...m.user, _count: { tests: 3 } },
+      reviewedBy: { name: "Admin", email: "admin@maapitambra.edu" },
+    }));
+    total = rows.length;
+    pendingCount = 0;
+  } else {
+    try {
+      const res = await Promise.all([
+        prisma.retestRequest.findMany({
+          where,
+          orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+          skip: (page - 1) * perPage,
+          take: perPage,
           select: {
-            name: true,
-            email: true,
-            phone: true,
-            _count: { select: { tests: true } },
+            id: true,
+            userId: true,
+            status: true,
+            reason: true,
+            adminNote: true,
+            occupation: true,
+            createdAt: true,
+            reviewedAt: true,
+            consumedAt: true,
+            user: {
+              select: {
+                name: true,
+                email: true,
+                phone: true,
+                _count: { select: { tests: true } },
+              },
+            },
+            reviewedBy: { select: { name: true, email: true } },
           },
-        },
-        reviewedBy: { select: { name: true, email: true } },
-      },
-    }),
-    prisma.retestRequest.count({ where }),
-    prisma.retestRequest.count({ where: { status: RetestStatus.PENDING } }),
-  ]);
+        }),
+        prisma.retestRequest.count({ where }),
+        prisma.retestRequest.count({ where: { status: RetestStatus.PENDING } }),
+      ]);
+      rows = res[0];
+      total = res[1];
+      pendingCount = res[2];
+    } catch (err) {
+      console.warn("[admin] Database unavailable for retests, serving mock:", err);
+      const mock = (await import("@/lib/mock-data")).getMockRetests();
+      rows = mock.map((m) => ({
+        ...m,
+        consumedAt: null,
+        user: { ...m.user, _count: { tests: 3 } },
+        reviewedBy: { name: "Admin", email: "admin@maapitambra.edu" },
+      }));
+      total = rows.length;
+      pendingCount = 0;
+    }
+  }
 
   // `_count.tests` includes an in-progress attempt; show completed ones only.
-  const inProgressByUser = await prisma.test.groupBy({
-    by: ["userId"],
-    where: { status: TestStatus.IN_PROGRESS },
-    _count: { _all: true },
-  });
-  const inProgressMap = new Map(inProgressByUser.map((r) => [r.userId, r._count._all]));
+  let inProgressMap = new Map<string, number>();
+  try {
+    const inProgressByUser = await prisma.test.groupBy({
+      by: ["userId"],
+      where: { status: TestStatus.IN_PROGRESS },
+      _count: { _all: true },
+    });
+    inProgressMap = new Map(inProgressByUser.map((r) => [r.userId, r._count._all]));
+  } catch {
+    // Ignore when offline
+  }
 
   const items = rows.map((row) => ({
     id: row.id,

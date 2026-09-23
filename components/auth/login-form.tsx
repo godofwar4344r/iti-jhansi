@@ -17,6 +17,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { GoogleButton } from "@/components/auth/google-button";
 
+import { useLanguage } from "@/hooks/use-language";
+import { Sparkles, ShieldCheck, GraduationCap } from "lucide-react";
+
 export function LoginForm({
   callbackUrl,
   googleEnabled,
@@ -27,6 +30,9 @@ export function LoginForm({
   googleEnabled: boolean;
   initiallyPending?: boolean;
 }) {
+  const { language } = useLanguage();
+  const hindi = language === "hi";
+
   const [showPassword, setShowPassword] = React.useState(false);
   const [formError, setFormError] = React.useState<string | null>(null);
   const [needsVerification, setNeedsVerification] = React.useState(false);
@@ -68,9 +74,15 @@ export function LoginForm({
     }
 
     setRedirecting(true);
-    toast.success("Signed in! Redirecting...");
+    toast.success(hindi ? "सफलतापूर्वक लॉगिन हो गया! पुनः निर्देशित किया जा रहा है..." : "Signed in! Redirecting...");
     const targetUrl = callbackUrl || result.data?.redirectTo || "/dashboard";
     window.location.assign(targetUrl);
+  }
+
+  function handleQuickDemo(email: string, pass: string) {
+    setValue("email", email);
+    setValue("password", pass);
+    void onSubmit({ email, password: pass, remember: true });
   }
 
   async function handleResend() {
@@ -79,18 +91,59 @@ export function LoginForm({
       resendVerificationAction({ email: getValues("email") }),
     );
     setResending(false);
-    if (result.ok) toast.success(result.message ?? "Verification e-mail sent.");
+    if (result.ok) toast.success(result.message ?? (hindi ? "सत्यापन ईमेल भेजा गया।" : "Verification e-mail sent."));
     else toast.error(result.error);
   }
 
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {hindi ? "पोर्टल में लॉगिन करें" : "Welcome back"}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Sign in to continue your training and assessments.
+          {hindi
+            ? "अपने कौशल प्रशिक्षण एवं ऑनलाइन परीक्षा में भाग लेने के लिए लॉगिन करें।"
+            : "Sign in to continue your training and assessments."}
         </p>
       </header>
+
+      {/* Quick Demo Login Helper Box */}
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm">
+        <div className="flex items-center gap-2 font-medium text-foreground">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <span>{hindi ? "त्वरित टेस्ट लॉगिन (1-क्लिक डेमो):" : "Quick Demo Credentials (1-Click):"}</span>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {hindi
+            ? "सीधे टेस्ट करने के लिए नीचे दिए गए बटन पर क्लिक करें:"
+            : "Click below to sign in instantly with test credentials:"}
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="justify-start text-xs border-primary/30 hover:bg-primary/10"
+            disabled={isSubmitting || redirecting}
+            onClick={() => handleQuickDemo("student@maapitambra.edu", "Password123!")}
+          >
+            <GraduationCap className="h-3.5 w-3.5 text-primary mr-1 shrink-0" />
+            <span className="truncate">{hindi ? "छात्र लॉगिन (Student)" : "Student: student@..."}</span>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="justify-start text-xs border-primary/30 hover:bg-primary/10"
+            disabled={isSubmitting || redirecting}
+            onClick={() => handleQuickDemo("admin@maapitambra.edu", "Admin123!")}
+          >
+            <ShieldCheck className="h-3.5 w-3.5 text-primary mr-1 shrink-0" />
+            <span className="truncate">{hindi ? "एडमिन लॉगिन (Admin)" : "Admin: admin@..."}</span>
+          </Button>
+        </div>
+      </div>
 
       {formError ? (
         <Alert variant="destructive">
@@ -104,7 +157,7 @@ export function LoginForm({
                 loading={resending}
                 onClick={handleResend}
               >
-                <Mail className="h-4 w-4" /> Resend verification e-mail
+                <Mail className="h-4 w-4" /> {hindi ? "सत्यापन ईमेल पुनः भेजें" : "Resend verification e-mail"}
               </Button>
             ) : null}
           </AlertDescription>
@@ -122,12 +175,12 @@ export function LoginForm({
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="space-y-2">
-          <Label htmlFor="email">E-mail address</Label>
+          <Label htmlFor="email">{hindi ? "ईमेल पता (E-mail)" : "E-mail address"}</Label>
           <Input
             id="email"
             type="email"
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder="student@maapitambra.edu"
             aria-invalid={Boolean(errors.email)}
             aria-describedby={errors.email ? "email-error" : undefined}
             {...register("email")}
@@ -141,12 +194,12 @@ export function LoginForm({
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{hindi ? "पासवर्ड (Password)" : "Password"}</Label>
             <Link
               href="/forgot-password"
               className="text-sm font-medium text-primary hover:underline"
             >
-              Forgot password?
+              {hindi ? "पासवर्ड भूल गए?" : "Forgot password?"}
             </Link>
           </div>
           <div className="relative">
@@ -183,12 +236,14 @@ export function LoginForm({
             onCheckedChange={(checked) => setValue("remember", checked === true)}
           />
           <Label htmlFor="remember" className="cursor-pointer font-normal text-muted-foreground">
-            Remember me on this device
+            {hindi ? "इस डिवाइस पर मुझे याद रखें" : "Remember me on this device"}
           </Label>
         </div>
 
         <Button type="submit" className="w-full" loading={isSubmitting || redirecting} disabled={isSubmitting || redirecting}>
-          {redirecting ? "Signing in..." : "Sign in"}
+          {redirecting
+            ? (hindi ? "लॉगिन हो रहा है..." : "Signing in...")
+            : (hindi ? "लॉगिन करें (Sign In)" : "Sign in")}
         </Button>
       </form>
 
@@ -199,7 +254,9 @@ export function LoginForm({
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">or</span>
+              <span className="bg-background px-2 text-muted-foreground">
+                {hindi ? "या" : "or"}
+              </span>
             </div>
           </div>
 
@@ -208,9 +265,9 @@ export function LoginForm({
       ) : null}
 
       <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
+        {hindi ? "खाता नहीं है? " : "Don't have an account? "}
         <Link href="/signup" className="font-medium text-primary hover:underline">
-          Create one
+          {hindi ? "नया खाता बनाएं" : "Create one"}
         </Link>
       </p>
     </div>

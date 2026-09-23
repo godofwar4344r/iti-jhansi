@@ -87,7 +87,10 @@ export function OnboardingForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="phone">Mobile number</Label>
+          <Label htmlFor="phone">
+            Mobile number{" "}
+            <span className="font-normal text-muted-foreground">(optional)</span>
+          </Label>
           <Input
             id="phone"
             type="tel"

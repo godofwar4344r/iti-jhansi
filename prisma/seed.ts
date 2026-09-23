@@ -16,6 +16,7 @@
  */
 import {
   AnswerOption,
+  ApprovalStatus,
   Difficulty,
   Occupation,
   PrismaClient,
@@ -758,14 +759,17 @@ async function main() {
 
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
-    update: { role: Role.ADMIN, disabled: false },
+    update: { role: Role.ADMIN, disabled: false, approvalStatus: ApprovalStatus.APPROVED },
     create: {
       email: adminEmail,
       name: adminName,
       passwordHash: await bcrypt.hash(adminPassword, 12),
       role: Role.ADMIN,
-      // The seeded administrator is trusted, so the account is pre-verified.
+      // The seeded administrator is trusted, so the account is pre-verified and
+      // pre-approved: it is the account that approves everyone else.
       emailVerified: new Date(),
+      approvalStatus: ApprovalStatus.APPROVED,
+      approvedAt: new Date(),
       phone: "9999999999",
       occupation: Occupation.FITTER,
     },

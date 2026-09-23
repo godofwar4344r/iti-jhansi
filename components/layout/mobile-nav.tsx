@@ -6,6 +6,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Menu, X } from "lucide-react";
 
 import { InstituteLogo } from "@/components/brand/institute-logo";
+import { LanguageToggle } from "@/components/language-toggle";
 import { Button } from "@/components/ui/button";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import type { NavItem } from "@/components/layout/nav-items";
@@ -47,6 +48,10 @@ export function MobileNav({ items, title }: { items: NavItem[]; title: string })
           </div>
 
           <SidebarNav items={items} onNavigate={() => setOpen(false)} />
+
+          <div className="mt-auto pt-6">
+            <LanguageToggle className="w-full justify-center" />
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

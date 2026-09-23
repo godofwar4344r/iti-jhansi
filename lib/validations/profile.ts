@@ -10,20 +10,30 @@ export const phoneSchema = z
   .refine((v) => /^(?:\+91|91|0)?[6-9]\d{9}$/.test(v), "Enter a valid 10-digit mobile number")
   .transform((v) => v.replace(/^(?:\+91|91|0)/, ""));
 
+/**
+ * The mobile number is optional: a trainee is never blocked from the portal for
+ * not having one. A number that IS entered still has to be a valid Indian
+ * mobile, so the field never fills with unusable data. Blank input becomes
+ * `null` rather than `""` so the column stays genuinely unset.
+ */
+export const optionalPhoneSchema = z
+  .union([phoneSchema, z.literal(""), z.null(), z.undefined()])
+  .transform((v) => (v === "" || v === undefined ? null : v));
+
 export const occupationSchema = z.nativeEnum(Occupation, {
   errorMap: () => ({ message: "Select your occupation" }),
 });
 
 export const profileSchema = z.object({
   name: nameSchema,
-  phone: phoneSchema,
+  phone: optionalPhoneSchema,
   occupation: occupationSchema,
 });
 
 /** Occupation is locked once chosen — a user belongs to exactly one trade. */
 export const profileUpdateSchema = z.object({
   name: nameSchema,
-  phone: phoneSchema,
+  phone: optionalPhoneSchema,
 });
 
 export type ProfileInput = z.infer<typeof profileSchema>;

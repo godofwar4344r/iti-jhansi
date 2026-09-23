@@ -66,5 +66,7 @@ export const ACTIVITY = {
   ADMIN_USER_DISABLED: "admin.user_disabled",
   ADMIN_USER_ENABLED: "admin.user_enabled",
   ADMIN_USER_PASSWORD_RESET: "admin.user_password_reset",
+  ADMIN_USER_APPROVED: "admin.user_approved",
+  ADMIN_USER_REJECTED: "admin.user_rejected",
   ADMIN_EXPORT: "admin.export",
 } as const;

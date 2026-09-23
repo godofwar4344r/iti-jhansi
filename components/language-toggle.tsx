@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
  * tap instead of two, and both labels stay visible, which matters when the
  * learner cannot read the one that is currently active.
  */
+import { useLanguage } from "@/hooks/use-language";
+
 export function LanguageToggle({
   value,
   onChange,
@@ -19,11 +21,14 @@ export function LanguageToggle({
   /** Shown when a question has no Hindi text of its own. */
   unavailable = false,
 }: {
-  value: Language;
-  onChange: (next: Language) => void;
+  value?: Language;
+  onChange?: (next: Language) => void;
   className?: string;
   unavailable?: boolean;
 }) {
+  const global = useLanguage();
+  const current = value ?? global.language;
+  const setLang = onChange ?? global.setLanguage;
   return (
     <div
       className={cn(
@@ -35,14 +40,27 @@ export function LanguageToggle({
     >
       <Languages className="ml-1 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
       {LANGUAGES.map((option) => {
-        const active = option === value;
+        const active = option === current;
         return (
           <button
             key={option}
             type="button"
             role="radio"
             aria-checked={active}
-            onClick={() => onChange(option)}
+            onClick={() => {
+              setLang(option);
+              try {
+                const domain = window.location.hostname;
+                document.cookie = `googtrans=/en/${option}; path=/;`;
+                document.cookie = `googtrans=/en/${option}; path=/; domain=${domain};`;
+                const combo = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+                if (combo) {
+                  combo.value = option;
+                  combo.dispatchEvent(new Event("change"));
+                }
+                window.dispatchEvent(new CustomEvent("mppiti-language-change", { detail: option }));
+              } catch {}
+            }}
             className={cn(
               "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -56,7 +74,7 @@ export function LanguageToggle({
           </button>
         );
       })}
-      {unavailable && value === "hi" ? (
+      {unavailable && current === "hi" ? (
         <span className="px-1 text-[11px] text-muted-foreground">English only</span>
       ) : null}
     </div>

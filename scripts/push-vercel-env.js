@@ -19,7 +19,7 @@ lines.forEach(l => {
 });
 
 // Override NEXT_PUBLIC_APP_URL to Vercel URL
-vars['NEXT_PUBLIC_APP_URL'] = 'https://iti-jhansi-portal.vercel.app';
+vars['NEXT_PUBLIC_APP_URL'] = 'https://skill-portal-mppiti.vercel.app';
 
 console.log(`Found ${Object.keys(vars).length} environment variables to set:`);
 Object.keys(vars).forEach(k => {

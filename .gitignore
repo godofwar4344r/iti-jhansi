@@ -55,3 +55,4 @@ prisma/*.db-journal
 .env*
 .vercel
 tmp/
+deploy.log

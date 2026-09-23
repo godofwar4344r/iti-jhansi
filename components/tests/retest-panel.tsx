@@ -16,6 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { useLanguage } from "@/hooks/use-language";
+
 export type RetestRequestRow = {
   id: string;
   status: RetestStatus;
@@ -28,11 +30,11 @@ export type RetestRequestRow = {
 
 const STATUS_META: Record<
   RetestStatus,
-  { label: string; variant: "warning" | "success" | "destructive"; icon: typeof Clock }
+  { label: string; labelHi: string; variant: "warning" | "success" | "destructive"; icon: typeof Clock }
 > = {
-  PENDING: { label: "Awaiting review", variant: "warning", icon: Clock },
-  APPROVED: { label: "Approved", variant: "success", icon: ThumbsUp },
-  REJECTED: { label: "Rejected", variant: "destructive", icon: ThumbsDown },
+  PENDING: { label: "Awaiting review", labelHi: "समीक्षा प्रतीक्षित", variant: "warning", icon: Clock },
+  APPROVED: { label: "Approved", labelHi: "स्वीकृत", variant: "success", icon: ThumbsUp },
+  REJECTED: { label: "Rejected", labelHi: "अस्वीकृत", variant: "destructive", icon: ThumbsDown },
 };
 
 export function RetestPanel({
@@ -50,6 +52,9 @@ export function RetestPanel({
   freeAttempts: number;
 }) {
   const router = useRouter();
+  const { language } = useLanguage();
+  const hindi = language === "hi";
+
   const [reason, setReason] = React.useState("");
   const [busy, setBusy] = React.useState(false);
 
@@ -63,7 +68,7 @@ export function RetestPanel({
       toast.error(result.error);
       return;
     }
-    toast.success(result.message ?? "Request sent.");
+    toast.success(result.message ?? (hindi ? "अनुरोध भेजा गया।" : "Request sent."));
     setReason("");
     router.refresh();
   }
@@ -72,11 +77,13 @@ export function RetestPanel({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <RotateCcw className="h-5 w-5 text-primary" aria-hidden /> Retest requests
+          <RotateCcw className="h-5 w-5 text-primary" aria-hidden />{" "}
+          {hindi ? "असीमित टेस्ट अभ्यास" : "Unlimited Test Practice"}
         </CardTitle>
         <CardDescription>
-          Every learner gets {freeAttempts} attempt{freeAttempts === 1 ? "" : "s"}. You have used{" "}
-          {attemptsUsed}. Further attempts need approval from the institute.
+          {hindi
+            ? `आपने ${attemptsUsed} टेस्ट प्रयास पूरे किए हैं। माँ पीताम्बरा आईटीआई में आपको असीमित अभ्यास की सुविधा है — किसी एडमिन अनुमोदन की आवश्यकता नहीं है।`
+            : `You have completed ${attemptsUsed} test attempt${attemptsUsed === 1 ? "" : "s"}. Unlimited practice attempts are unlocked — no admin approval needed.`}
         </CardDescription>
       </CardHeader>
 
@@ -108,7 +115,7 @@ export function RetestPanel({
 
         {requests.length > 0 ? (
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Your requests</h3>
+            <h3 className="text-sm font-semibold">{hindi ? "आपके अनुरोध" : "Your requests"}</h3>
             <ul className="divide-y">
               {requests.map((request) => {
                 const meta = STATUS_META[request.status];
@@ -118,11 +125,13 @@ export function RetestPanel({
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-2">
                         <Badge variant={meta.variant}>
-                          <Icon className="h-3 w-3" /> {meta.label}
+                          <Icon className="h-3 w-3" /> {hindi ? meta.labelHi : meta.label}
                         </Badge>
                         {request.status === "APPROVED" ? (
                           <Badge variant="outline">
-                            {request.consumedAt ? "Used" : "Ready to use"}
+                            {request.consumedAt
+                              ? (hindi ? "प्रयुक्त" : "Used")
+                              : (hindi ? "उपयोग के लिए तैयार" : "Ready to use")}
                           </Badge>
                         ) : null}
                         <span className="text-xs text-muted-foreground">

@@ -31,6 +31,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useLanguage } from "@/hooks/use-language";
 import { SUBJECT_SHORT_LABELS } from "@/lib/constants";
 import { cn, formatBytes, formatDate } from "@/lib/utils";
 import type { PdfListItem } from "@/types";
@@ -51,6 +52,7 @@ export function PdfLibrary({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { language, t } = useLanguage();
 
   const [query, setQuery] = React.useState(initialQuery);
   const [viewer, setViewer] = React.useState<ViewerState>(null);
@@ -126,9 +128,9 @@ export function PdfLibrary({
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by title, topic or description…"
+            placeholder={language === "hi" ? "शीर्षक, विषय या विवरण द्वारा खोजें..." : "Search by title, topic or description…"}
             className="pl-9 pr-9"
-            aria-label="Search learning material"
+            aria-label={language === "hi" ? "अध्ययन सामग्री खोजें" : "Search learning material"}
           />
           {query ? (
             <button
@@ -144,8 +146,8 @@ export function PdfLibrary({
 
         <Tabs value={initialTab} onValueChange={setTab}>
           <TabsList>
-            <TabsTrigger value="all">All documents</TabsTrigger>
-            <TabsTrigger value="bookmarked">Bookmarked</TabsTrigger>
+            <TabsTrigger value="all">{language === "hi" ? "सभी सामग्री (All)" : "All documents"}</TabsTrigger>
+            <TabsTrigger value="bookmarked">{language === "hi" ? "बुकमार्क (Bookmarked)" : "Bookmarked"}</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -153,13 +155,13 @@ export function PdfLibrary({
       {pdfs.length === 0 ? (
         <Card className="p-10 text-center">
           <FileText className="mx-auto mb-3 h-8 w-8 text-muted-foreground" aria-hidden />
-          <p className="font-medium">No documents found</p>
+          <p className="font-medium">{language === "hi" ? "कोई अध्ययन सामग्री नहीं मिली" : "No documents found"}</p>
           <p className="mt-1 text-sm text-muted-foreground">
             {initialQuery
-              ? "Try a different search term."
+              ? (language === "hi" ? "अन्य कीवर्ड से खोजें।" : "Try a different search term.")
               : initialTab === "bookmarked"
-                ? "You haven't bookmarked anything yet."
-                : "Nothing has been published for your trade yet."}
+                ? (language === "hi" ? "आपने अभी तक कुछ भी बुकमार्क नहीं किया है।" : "You haven't bookmarked anything yet.")
+                : (language === "hi" ? "आपकी ट्रेड के लिए अभी सामग्री उपलब्ध नहीं है।" : "Nothing has been published for your trade yet.")}
           </p>
         </Card>
       ) : (
@@ -167,6 +169,9 @@ export function PdfLibrary({
           {pdfs.map((pdf) => {
             const bookmarked = bookmarks[pdf.id] ?? false;
             const highlighted = highlightId === pdf.id;
+            const mainTitle = language === "hi" && pdf.titleHi ? pdf.titleHi : pdf.title;
+            const secondaryTitle = language === "hi" && pdf.titleHi ? pdf.title : pdf.titleHi;
+
             return (
               <li key={pdf.id} ref={highlighted ? highlightRef : undefined}>
                 <Card
@@ -184,10 +189,12 @@ export function PdfLibrary({
                         <FileText className="h-5 w-5" aria-hidden />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold leading-snug">{pdf.title}</h3>
-                        {pdf.titleHi ? (
-                          <p lang="hi" className="font-devanagari text-xs text-muted-foreground">
-                            {pdf.titleHi}
+                        <h3 className={cn("font-semibold leading-snug", language === "hi" && pdf.titleHi && "font-devanagari")}>
+                          {mainTitle}
+                        </h3>
+                        {secondaryTitle ? (
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {secondaryTitle}
                           </p>
                         ) : null}
                         <p className="mt-1 text-xs text-muted-foreground">
@@ -219,9 +226,18 @@ export function PdfLibrary({
                     )}
 
                     <div className="mt-4 flex flex-wrap items-center gap-2">
+                      {pdf.titleHi ? (
+                        <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+                          हिन्दी / English
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          English
+                        </Badge>
+                      )}
                       {pdf.builtIn ? (
                         <Badge variant="secondary">
-                          <ShieldCheck className="h-3 w-3" /> Official
+                          <ShieldCheck className="h-3 w-3" /> {language === "hi" ? "आधिकारिक निमी" : "Official NIMI"}
                         </Badge>
                       ) : null}
                       {pdf.subject ? (
@@ -232,21 +248,21 @@ export function PdfLibrary({
                       ) : null}
                       {pdf.questionCount > 0 ? (
                         <Badge variant="outline" title="Test questions drawn from this document">
-                          <HelpCircle className="h-3 w-3" /> {pdf.questionCount} in tests
+                          <HelpCircle className="h-3 w-3" /> {pdf.questionCount} {language === "hi" ? "टेस्ट प्रश्न" : "in tests"}
                         </Badge>
                       ) : null}
                       {pdf.viewed ? (
                         <Badge variant="success">
-                          <Eye className="h-3 w-3" /> Viewed
+                          <Eye className="h-3 w-3" /> {language === "hi" ? "देखा गया" : "Viewed"}
                         </Badge>
                       ) : null}
                     </div>
 
                     <div className="mt-4 flex gap-2">
                       <Button className="flex-1" onClick={() => handleOpen(pdf)}>
-                        Read
+                        {language === "hi" ? "पढ़ें (Read)" : "Read"}
                       </Button>
-                      <Button asChild variant="outline" size="icon" title="Download">
+                      <Button asChild variant="outline" size="icon" title={language === "hi" ? "डाउनलोड करें" : "Download"}>
                         <a href={pdf.fileUrl} download target="_blank" rel="noopener noreferrer">
                           <Download className="h-4 w-4" />
                           <span className="sr-only">Download {pdf.title}</span>

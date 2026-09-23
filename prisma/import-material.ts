@@ -151,7 +151,34 @@ async function main() {
   // -------------------------------------------------------------------------
   // Questions
   // -------------------------------------------------------------------------
-  let written = 0;
+  type QuestionRecord = {
+    occupation: Occupation;
+    slug: string;
+    data: {
+      occupation: Occupation;
+      subject: Subject;
+      topic: string;
+      question: string;
+      optionA: string;
+      optionB: string;
+      optionC: string;
+      optionD: string;
+      correctAnswer: AnswerOption;
+      difficulty: Difficulty;
+      questionHi: string | null;
+      optionAHi: string | null;
+      optionBHi: string | null;
+      optionCHi: string | null;
+      optionDHi: string | null;
+      sourcePdfId: string | null;
+      sourcePage: number | null;
+      sourceLabel: string | null;
+      syllabusWeek: string | null;
+      active: boolean;
+    };
+  };
+
+  const records: QuestionRecord[] = [];
   for (const item of bank.questions) {
     const [a, b, c, d] = item.options;
     const answer = LETTERS[item.answerIndex];
@@ -189,12 +216,33 @@ async function main() {
         active: true,
       };
 
-      await prisma.question.upsert({
-        where: { occupation_importKey: { occupation, importKey: item.slug } },
-        update: data,
-        create: { ...data, importKey: item.slug },
-      });
-      written += 1;
+      records.push({ occupation, slug: item.slug, data });
+    }
+  }
+
+  let written = 0;
+  const CONCURRENCY = 8;
+  async function upsertWithRetry(rec: QuestionRecord, retries = 3) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        return await prisma.question.upsert({
+          where: { occupation_importKey: { occupation: rec.occupation, importKey: rec.slug } },
+          update: rec.data,
+          create: { ...rec.data, importKey: rec.slug },
+        });
+      } catch (err) {
+        if (attempt === retries) throw err;
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
+      }
+    }
+  }
+
+  for (let i = 0; i < records.length; i += CONCURRENCY) {
+    const chunk = records.slice(i, i + CONCURRENCY);
+    await Promise.all(chunk.map((rec) => upsertWithRetry(rec)));
+    written += chunk.length;
+    if (written % 200 === 0 || written === records.length) {
+      console.log(`  • ${written}/${records.length} question rows written...`);
     }
   }
 

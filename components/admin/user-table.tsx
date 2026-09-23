@@ -60,12 +60,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useLanguage } from "@/hooks/use-language";
 import type { AdminUserRow } from "@/types";
 
 const NO_OCCUPATION = "__none__";
 
 export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; currentAdminId: string }) {
   const router = useRouter();
+  const { language } = useLanguage();
+  const hindi = language === "hi";
+
   const [editing, setEditing] = React.useState<AdminUserRow | null>(null);
   const [deleting, setDeleting] = React.useState<AdminUserRow | null>(null);
   const [busy, setBusy] = React.useState(false);
@@ -106,7 +110,7 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
       toast.error(result.error);
       return;
     }
-    toast.success(result.message ?? "User updated.");
+    toast.success(result.message ?? (hindi ? "उपयोगकर्ता अद्यतन किया गया।" : "User updated."));
     setEditing(null);
     router.refresh();
   }
@@ -117,7 +121,7 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
     setBusy(false);
     if (!result.ok) toast.error(result.error);
     else {
-      toast.success(result.message ?? "Updated.");
+      toast.success(result.message ?? (hindi ? "अद्यतन सफल।" : "Updated."));
       router.refresh();
     }
   }
@@ -127,7 +131,7 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
     const result = await runAction(() => resetUserPasswordAction(user.id));
     setBusy(false);
     if (!result.ok) toast.error(result.error);
-    else toast.success(result.message ?? "Reset link sent.");
+    else toast.success(result.message ?? (hindi ? "पासवर्ड रीसेट लिंक भेजा गया।" : "Reset link sent."));
   }
 
   async function confirmDelete() {
@@ -139,7 +143,7 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
       toast.error(result.error);
       return;
     }
-    toast.success(result.message ?? "User deleted.");
+    toast.success(result.message ?? (hindi ? "उपयोगकर्ता को हटा दिया गया।" : "User deleted."));
     setDeleting(null);
     router.refresh();
   }
@@ -147,7 +151,7 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
   if (users.length === 0) {
     return (
       <p className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-        No users match these filters.
+        {hindi ? "कोई उपयोगकर्ता इस फ़िल्टर से मेल नहीं खाता।" : "No users match these filters."}
       </p>
     );
   }
@@ -157,14 +161,14 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>User</TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead>Occupation</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Tests</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Joined</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>{hindi ? "उपयोगकर्ता" : "User"}</TableHead>
+            <TableHead>{hindi ? "फ़ोन" : "Phone"}</TableHead>
+            <TableHead>{hindi ? "ट्रेड / व्यवसाय" : "Occupation"}</TableHead>
+            <TableHead>{hindi ? "भूमिका" : "Role"}</TableHead>
+            <TableHead>{hindi ? "टेस्ट" : "Tests"}</TableHead>
+            <TableHead>{hindi ? "स्थिति" : "Status"}</TableHead>
+            <TableHead>{hindi ? "शामिल हुए" : "Joined"}</TableHead>
+            <TableHead className="text-right">{hindi ? "कार्रवाई" : "Actions"}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -176,7 +180,7 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
                     <AvatarFallback>{initials(user.name)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{user.name ?? "Unnamed"}</p>
+                    <p className="truncate font-medium">{user.name ?? (hindi ? "अनाम" : "Unnamed")}</p>
                     <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                   </div>
                 </div>
@@ -187,54 +191,80 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
               </TableCell>
               <TableCell>
                 <Badge variant={user.role === "ADMIN" ? "warning" : "outline"}>
-                  {user.role === "ADMIN" ? "Admin" : "Learner"}
+                  {user.role === "ADMIN" ? (hindi ? "एडमिन" : "Admin") : (hindi ? "शिक्षार्थी" : "Learner")}
                 </Badge>
               </TableCell>
               <TableCell className="tabular-nums">{user.testsTaken}</TableCell>
               <TableCell>
                 <div className="flex flex-wrap gap-1">
                   <Badge variant={user.disabled ? "destructive" : "success"}>
-                    {user.disabled ? "Disabled" : "Active"}
+                    {user.disabled ? (hindi ? "निष्क्रिय" : "Disabled") : (hindi ? "सक्रिय" : "Active")}
                   </Badge>
-                  {!user.emailVerified ? <Badge variant="warning">Unverified</Badge> : null}
+                  {!user.emailVerified ? <Badge variant="warning">{hindi ? "अपुष्ट" : "Unverified"}</Badge> : null}
                 </div>
               </TableCell>
               <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                 {formatDate(user.createdAt)}
                 <br />
-                {user.lastLoginAt ? `last seen ${formatDate(user.lastLoginAt)}` : "never signed in"}
+                {user.lastLoginAt
+                  ? `${hindi ? "अंतिम बार देखा" : "last seen"} ${formatDate(user.lastLoginAt)}`
+                  : (hindi ? "कभी लॉगिन नहीं किया" : "never signed in")}
               </TableCell>
               <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${user.email}`}>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => openEdit(user)}>
-                      <Pencil /> Edit details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => sendReset(user)}>
-                      <KeyRound /> Send password reset
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      disabled={user.id === currentAdminId}
-                      onSelect={() => toggleDisabled(user)}
-                    >
-                      {user.disabled ? <ShieldCheck /> : <ShieldOff />}
-                      {user.disabled ? "Enable account" : "Disable account"}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      disabled={user.id === currentAdminId}
-                      className="text-destructive focus:text-destructive"
-                      onSelect={() => setDeleting(user)}
-                    >
-                      <Trash2 /> Delete user
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex items-center justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Edit ${user.email}`}
+                    title={hindi ? "संपादित करें" : "Edit details"}
+                    onClick={() => openEdit(user)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    aria-label={`Delete ${user.email}`}
+                    title={hindi ? "हटाएं" : "Delete user"}
+                    disabled={user.id === currentAdminId}
+                    onClick={() => setDeleting(user)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${user.email}`}>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => openEdit(user)}>
+                        <Pencil /> {hindi ? "विवरण संपादित करें" : "Edit details"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => sendReset(user)}>
+                        <KeyRound /> {hindi ? "पासवर्ड रीसेट लिंक भेजें" : "Send password reset"}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        disabled={user.id === currentAdminId}
+                        onSelect={() => toggleDisabled(user)}
+                      >
+                        {user.disabled ? <ShieldCheck /> : <ShieldOff />}
+                        {user.disabled
+                          ? (hindi ? "खाता सक्रिय करें" : "Enable account")
+                          : (hindi ? "खाता निष्क्रिय करें" : "Disable account")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        disabled={user.id === currentAdminId}
+                        className="text-destructive focus:text-destructive"
+                        onSelect={() => setDeleting(user)}
+                      >
+                        <Trash2 /> {hindi ? "उपयोगकर्ता हटाएं" : "Delete user"}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -244,13 +274,13 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
       <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit user</DialogTitle>
+            <DialogTitle>{hindi ? "उपयोगकर्ता विवरण संपादित करें" : "Edit user"}</DialogTitle>
             <DialogDescription>{editing?.email}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Full name</Label>
+              <Label htmlFor="edit-name">{hindi ? "पूरा नाम" : "Full name"}</Label>
               <Input
                 id="edit-name"
                 value={form.name}
@@ -259,7 +289,7 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-phone">Mobile number</Label>
+              <Label htmlFor="edit-phone">{hindi ? "मोबाइल नंबर" : "Mobile number"}</Label>
               <Input
                 id="edit-phone"
                 value={form.phone}
@@ -269,7 +299,7 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="edit-occupation">Occupation</Label>
+                <Label htmlFor="edit-occupation">{hindi ? "व्यवसाय / ट्रेड" : "Occupation"}</Label>
                 <Select
                   value={form.occupation}
                   onValueChange={(value) => setForm((f) => ({ ...f, occupation: value }))}
@@ -278,7 +308,7 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={NO_OCCUPATION}>Not set</SelectItem>
+                    <SelectItem value={NO_OCCUPATION}>{hindi ? "चयनित नहीं" : "Not set"}</SelectItem>
                     {OCCUPATIONS.map((occupation) => (
                       <SelectItem key={occupation} value={occupation}>
                         {OCCUPATION_LABELS[occupation]}
@@ -289,7 +319,7 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-role">Role</Label>
+                <Label htmlFor="edit-role">{hindi ? "भूमिका" : "Role"}</Label>
                 <Select
                   value={form.role}
                   onValueChange={(value) => setForm((f) => ({ ...f, role: value as Role }))}
@@ -298,8 +328,8 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={Role.USER}>Learner</SelectItem>
-                    <SelectItem value={Role.ADMIN}>Administrator</SelectItem>
+                    <SelectItem value={Role.USER}>{hindi ? "शिक्षार्थी (Learner)" : "Learner"}</SelectItem>
+                    <SelectItem value={Role.ADMIN}>{hindi ? "प्रशासक (Administrator)" : "Administrator"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -308,10 +338,10 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditing(null)}>
-              Cancel
+              {hindi ? "रद्द करें" : "Cancel"}
             </Button>
             <Button onClick={saveEdit} loading={busy}>
-              Save changes
+              {hindi ? "परिवर्तन सहेजें" : "Save changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -320,15 +350,17 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
       <AlertDialog open={Boolean(deleting)} onOpenChange={(open) => !open && setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this user?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {hindi ? "क्या आप इस उपयोगकर्ता को हटाना चाहते हैं?" : "Delete this user?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {deleting?.email} will be permanently removed, along with their test attempts,
-              bookmarks and activity history. This cannot be undone. Consider disabling the account
-              instead.
+              {hindi
+                ? `${deleting?.email} को स्थायी रूप से हटा दिया जाएगा, जिसमें उनके सभी टेस्ट प्रयास, बुकमार्क और गतिविधि इतिहास शामिल हैं। इसे वापस नहीं लाया जा सकता।`
+                : `${deleting?.email} will be permanently removed, along with their test attempts, bookmarks and activity history. This cannot be undone. Consider disabling the account instead.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{hindi ? "रद्द करें" : "Cancel"}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={(event) => {
@@ -336,7 +368,9 @@ export function UserTable({ users, currentAdminId }: { users: AdminUserRow[]; cu
                 void confirmDelete();
               }}
             >
-              {busy ? "Deleting…" : "Delete permanently"}
+              {busy
+                ? (hindi ? "हटाया जा रहा है…" : "Deleting…")
+                : (hindi ? "स्थायी रूप से हटाएं" : "Delete permanently")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

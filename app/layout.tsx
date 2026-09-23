@@ -34,7 +34,7 @@ function getMetadataBase(): URL {
 export const metadata: Metadata = {
   metadataBase: getMetadataBase(),
   title: {
-    default: `${INSTITUTE.name} · ${INSTITUTE.portalName}`,
+    default: INSTITUTE.name,
     template: `%s · ${INSTITUTE.shortName}`,
   },
   description: `Occupation-wise learning material and timed assessments for trainees of ${INSTITUTE.name}, ${INSTITUTE.city}: Fitter, Electrician, Solar Technician and Basic Cosmetology.`,
@@ -68,6 +68,8 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+import { GoogleTranslateScript } from "@/components/google-translate-script";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -78,6 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </a>
           {children}
           <Toaster />
+          <GoogleTranslateScript />
         </Providers>
       </body>
     </html>

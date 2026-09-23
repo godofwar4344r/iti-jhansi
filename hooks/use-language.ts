@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-
 import { LANGUAGES, type Language } from "@/lib/constants";
+import { translations, getTranslation } from "@/lib/translations";
 
 const STORAGE_KEY = "mppiti.language";
 
@@ -10,28 +10,39 @@ function isLanguage(value: unknown): value is Language {
   return typeof value === "string" && (LANGUAGES as readonly string[]).includes(value);
 }
 
-/**
- * Reading language for bilingual content, persisted per browser.
- *
- * The initial render is always English so the server and client agree; the
- * stored preference is applied in an effect. `ready` tells a caller whether the
- * preference has been read yet, which lets the language switch avoid flashing
- * the wrong label on first paint.
- */
-export function useLanguage(): {
+export type AppTranslation = typeof translations.en | typeof translations.hi;
+
+export interface LanguageContextType {
   language: Language;
   setLanguage: (next: Language) => void;
   ready: boolean;
-} {
-  const [language, setLanguageState] = React.useState<Language>("en");
+  t: AppTranslation;
+}
+
+const LanguageContext = React.createContext<LanguageContextType | undefined>(undefined);
+
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const [language, setLanguageState] = React.useState<Language>("hi");
   const [ready, setReady] = React.useState(false);
 
   React.useEffect(() => {
     try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryLang = urlParams.get("lang");
+      if (isLanguage(queryLang)) {
+        setLanguageState(queryLang);
+        window.localStorage.setItem(STORAGE_KEY, queryLang);
+        setReady(true);
+        return;
+      }
       const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (isLanguage(stored)) setLanguageState(stored);
+      if (isLanguage(stored)) {
+        setLanguageState(stored);
+      } else {
+        window.localStorage.setItem(STORAGE_KEY, "hi");
+      }
     } catch {
-      // Private browsing or a blocked storage partition — English it is.
+      // Ignore
     }
     setReady(true);
   }, []);
@@ -40,10 +51,38 @@ export function useLanguage(): {
     setLanguageState(next);
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
+      window.dispatchEvent(new CustomEvent("mppiti-language-change", { detail: next }));
     } catch {
-      // Not persisting is survivable; the choice still applies to this page.
+      // Ignore
     }
   }, []);
 
-  return { language, setLanguage, ready };
+  React.useEffect(() => {
+    function handleEvent(e: Event) {
+      const detail = (e as CustomEvent).detail;
+      if (isLanguage(detail)) setLanguageState(detail);
+    }
+    window.addEventListener("mppiti-language-change", handleEvent);
+    return () => window.removeEventListener("mppiti-language-change", handleEvent);
+  }, []);
+
+  const t = getTranslation(language);
+
+  return React.createElement(
+    LanguageContext.Provider,
+    { value: { language, setLanguage, ready, t } },
+    children,
+  );
+}
+
+export function useLanguage(): LanguageContextType {
+  const context = React.useContext(LanguageContext);
+  if (context) return context;
+
+  return {
+    language: "hi",
+    setLanguage: () => {},
+    ready: true,
+    t: translations.hi,
+  };
 }

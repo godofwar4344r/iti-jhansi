@@ -72,6 +72,15 @@ enum RetestStatus {
   REJECTED
 }
 
+/// Whether an administrator has let this account into the portal. Self-service
+/// sign-ups start PENDING and cannot sign in until approved; accounts an
+/// administrator creates are APPROVED outright.
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // ---------------------------------------------------------------------------
 // Auth.js core models
 // ---------------------------------------------------------------------------
@@ -88,24 +97,34 @@ model User {
   role          Role        @default(USER)
   disabled      Boolean     @default(false)
   lastLoginAt   DateTime?
+
+  /// Registration gate. `disabled` is a separate, later action: an approved
+  /// learner can still be suspended without losing their approval history.
+  approvalStatus  ApprovalStatus @default(PENDING)
+  approvalNote    String?
+  approvedAt      DateTime?
+  approvedById    String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  accounts        Account[]
-  sessions        Session[]
-  tests           Test[]
-  bookmarks       Bookmark[]
-  pdfViews        PdfView[]
-  activityLogs    ActivityLog[]
-  uploadedPdfs    Pdf[]                    @relation("PdfUploader")
-  resetTokens     PasswordResetToken[]
-  verifyTokens    EmailVerificationToken[]
-  retestRequests  RetestRequest[]          @relation("RetestRequester")
-  retestsReviewed RetestRequest[]          @relation("RetestReviewer")
+  accounts     Account[]
+  sessions     Session[]
+  tests        Test[]
+  bookmarks    Bookmark[]
+  pdfViews     PdfView[]
+  activityLogs ActivityLog[]
+  uploadedPdfs Pdf[]         @relation("PdfUploader")
+  resetTokens  PasswordResetToken[]
+  verifyTokens EmailVerificationToken[]
+  retestRequests  RetestRequest[] @relation("RetestRequester")
+  retestsReviewed RetestRequest[] @relation("RetestReviewer")
+  approvedBy      User?  @relation("UserApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedUsers   User[] @relation("UserApprover")
 
   @@index([occupation])
   @@index([role])
   @@index([createdAt])
+  @@index([approvalStatus])
   @@map("users")
 }
 

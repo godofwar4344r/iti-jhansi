@@ -34,6 +34,8 @@ const LABELS: Record<string, string> = {
   "admin.user_disabled": "Disabled a user",
   "admin.user_enabled": "Enabled a user",
   "admin.user_password_reset": "Issued a password reset",
+  "admin.user_approved": "Approved a registration",
+  "admin.user_rejected": "Rejected a registration",
   "admin.export": "Exported a report",
 };
 

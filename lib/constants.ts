@@ -5,8 +5,9 @@ import { Occupation, Difficulty, QuestionType, Subject, TestStatus } from "@pris
  * (update.vppup.in, ITI code 2627) rather than typed from memory.
  */
 export const INSTITUTE = {
-  name: "Maa Pitambra Private ITI",
-  shortName: "Maa Pitambra ITI",
+  name: "Maa Pitambra Pvt ITI Jhansi",
+  nameHi: "माँ पीताम्बरा प्राइवेट आईटीआई झाँसी",
+  shortName: "Maa Pitambra Pvt ITI Jhansi",
   city: "Jhansi",
   address:
     "Behind Hero JMK Showroom, Shivpuri Road, Nandanpura, Jhansi, Uttar Pradesh 284003",
@@ -16,7 +17,8 @@ export const INSTITUTE = {
   approval: "Approved by DGT, Ministry of Skill Development & Entrepreneurship, Government of India",
   email: "mppitijhs@gmail.com",
   phone: "+91 98892 16678",
-  portalName: "Skill Learning & Assessment Portal",
+  portalName: "Maa Pitambra Pvt ITI Jhansi",
+  portalNameHi: "माँ पीताम्बरा प्राइवेट आईटीआई झाँसी",
   /** Both mottoes appear on the institute seal. */
   motto: "Skill Today, Success Tomorrow",
   mottoHi: "कौशल से समृद्धि, युवा से विकसित भारत",

@@ -1,7 +1,7 @@
 import "server-only";
 import { AnswerOption, QuestionType, TestStatus, type Question } from "@prisma/client";
 
-import { prisma } from "@/lib/prisma";
+import { prisma, isDatabaseOnline } from "@/lib/prisma";
 import { shuffle, round } from "@/lib/utils";
 import {
   MARKS_PER_QUESTION,
@@ -188,12 +188,17 @@ export async function finalizeTest(testId: string, autoSubmitted = false) {
  * if the browser was closed.
  */
 export async function finalizeExpiredTests(userId: string) {
-  const expired = await prisma.test.findMany({
-    where: { userId, status: TestStatus.IN_PROGRESS, expiresAt: { lt: new Date() } },
-    select: { id: true },
-  });
-  for (const test of expired) await finalizeTest(test.id, true);
-  return expired.map((t) => t.id);
+  if (!(await isDatabaseOnline())) return [];
+  try {
+    const expired = await prisma.test.findMany({
+      where: { userId, status: TestStatus.IN_PROGRESS, expiresAt: { lt: new Date() } },
+      select: { id: true },
+    });
+    for (const test of expired) await finalizeTest(test.id, true);
+    return expired.map((t) => t.id);
+  } catch {
+    return [];
+  }
 }
 
 export function testDurationSeconds() {

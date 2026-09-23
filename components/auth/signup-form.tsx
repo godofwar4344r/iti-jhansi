@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { GoogleButton } from "@/components/auth/google-button";
 import { PasswordStrength } from "@/components/auth/password-strength";
+import { useLanguage } from "@/hooks/use-language";
 
 export function SignupForm({
   googleEnabled,
@@ -23,6 +24,9 @@ export function SignupForm({
   /** False when the deployment has no Google OAuth credentials configured. */
   googleEnabled: boolean;
 }) {
+  const { language } = useLanguage();
+  const hindi = language === "hi";
+
   const [showPassword, setShowPassword] = React.useState(false);
   const [formError, setFormError] = React.useState<string | null>(null);
   const [redirecting, setRedirecting] = React.useState(false);
@@ -137,9 +141,13 @@ export function SignupForm({
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {hindi ? "नया छात्र खाता बनाएं" : "Create your account"}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          You&apos;ll choose your trade right after signing up.
+          {hindi
+            ? "पंजीकरण के तुरंत बाद आप अपनी ट्रेड चुन सकते हैं।"
+            : "You'll choose your trade right after signing up."}
         </p>
       </header>
 
@@ -151,11 +159,11 @@ export function SignupForm({
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="space-y-2">
-          <Label htmlFor="name">Full name</Label>
+          <Label htmlFor="name">{hindi ? "पूरा नाम" : "Full name"}</Label>
           <Input
             id="name"
             autoComplete="name"
-            placeholder="Ramesh Kumar"
+            placeholder={hindi ? "राहुल शर्मा" : "Ramesh Kumar"}
             aria-invalid={Boolean(errors.name)}
             {...register("name")}
           />
@@ -163,12 +171,12 @@ export function SignupForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email">E-mail address</Label>
+          <Label htmlFor="email">{hindi ? "ईमेल पता" : "E-mail address"}</Label>
           <Input
             id="email"
             type="email"
             autoComplete="email"
-            placeholder="you@example.com"
+            placeholder="student@example.com"
             aria-invalid={Boolean(errors.email)}
             {...register("email")}
           />
@@ -176,13 +184,13 @@ export function SignupForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{hindi ? "पासवर्ड (कम से कम 8 अक्षर)" : "Password"}</Label>
           <div className="relative">
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
               autoComplete="new-password"
-              placeholder="At least 8 characters"
+              placeholder="••••••••"
               className="pr-10"
               aria-invalid={Boolean(errors.password)}
               {...register("password")}
@@ -203,7 +211,9 @@ export function SignupForm({
         </div>
 
         <Button type="submit" className="w-full" loading={isSubmitting || redirecting} disabled={isSubmitting || redirecting}>
-          {redirecting ? "Setting up account..." : "Create account"}
+          {redirecting
+            ? (hindi ? "खाता तैयार हो रहा है..." : "Setting up account...")
+            : (hindi ? "खाता बनाएं (Register)" : "Create account")}
         </Button>
       </form>
 
@@ -214,18 +224,20 @@ export function SignupForm({
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">or</span>
+              <span className="bg-background px-2 text-muted-foreground">
+                {hindi ? "या" : "or"}
+              </span>
             </div>
           </div>
 
-          <GoogleButton callbackUrl="/onboarding" label="Sign up with Google" />
+          <GoogleButton callbackUrl="/onboarding" label={hindi ? "गूगल से साइन अप करें" : "Sign up with Google"} />
         </>
       ) : null}
 
       <p className="text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
+        {hindi ? "पहले से खाता है? " : "Already have an account? "}
         <Link href="/login" className="font-medium text-primary hover:underline">
-          Sign in
+          {hindi ? "लॉगिन करें" : "Sign in"}
         </Link>
       </p>
     </div>

@@ -46,8 +46,8 @@ export default async function OnboardingPage() {
           <CardHeader>
             <CardTitle className="text-2xl">One last step</CardTitle>
             <CardDescription>
-              We need a few details before your dashboard, learning material and assessments can be
-              set up for you.
+              Confirm your name so your dashboard, learning material and assessments can be set
+              up for you. A mobile number is optional.
             </CardDescription>
           </CardHeader>
           <CardContent>

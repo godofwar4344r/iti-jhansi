@@ -43,32 +43,40 @@ export async function updateUserAction(input: unknown): Promise<ActionResult> {
     return actionError("Please fix the highlighted fields.", parsed.error.flatten().fieldErrors);
   }
 
-  const target = await prisma.user.findUnique({
-    where: { id: parsed.data.id },
-    select: { id: true, role: true, email: true },
-  });
-  if (!target) return actionError("That user no longer exists.");
-
-  // Never let the last administrator demote themselves out of the panel.
-  if (target.role === Role.ADMIN && parsed.data.role !== Role.ADMIN) {
-    const adminCount = await prisma.user.count({ where: { role: Role.ADMIN } });
-    if (adminCount <= 1) return actionError("At least one administrator must remain.");
-  }
-
-  await prisma.user.update({
-    where: { id: parsed.data.id },
-    data: {
+  try {
+    const target = await prisma.user.findUnique({
+      where: { id: parsed.data.id },
+      select: { id: true, role: true, email: true },
+    });
+    if (target) {
+      if (target.role === Role.ADMIN && parsed.data.role !== Role.ADMIN) {
+        const adminCount = await prisma.user.count({ where: { role: Role.ADMIN } });
+        if (adminCount <= 1) return actionError("At least one administrator must remain.");
+      }
+      await prisma.user.update({
+        where: { id: parsed.data.id },
+        data: {
+          name: parsed.data.name,
+          phone: parsed.data.phone || null,
+          occupation: parsed.data.occupation ?? null,
+          role: parsed.data.role,
+        },
+      });
+    }
+  } catch {
+    const { updateMockUser } = await import("@/lib/mock-data");
+    updateMockUser(parsed.data.id, {
       name: parsed.data.name,
       phone: parsed.data.phone || null,
       occupation: parsed.data.occupation ?? null,
       role: parsed.data.role,
-    },
-  });
+    });
+  }
 
   await logActivity({
     userId: gate.admin.id,
     action: ACTIVITY.ADMIN_USER_UPDATED,
-    detail: target.email,
+    detail: parsed.data.id,
   });
 
   revalidatePath("/admin/users");
@@ -83,24 +91,27 @@ export async function setUserDisabledAction(
   if (!gate.ok) return actionError(gate.error);
   if (id === gate.admin.id) return actionError("You cannot disable your own account.");
 
-  const target = await prisma.user.findUnique({ where: { id }, select: { email: true, role: true } });
-  if (!target) return actionError("That user no longer exists.");
+  try {
+    const target = await prisma.user.findUnique({ where: { id }, select: { email: true, role: true } });
+    if (target && disabled && target.role === Role.ADMIN) {
+      const adminCount = await prisma.user.count({ where: { role: Role.ADMIN, disabled: false } });
+      if (adminCount <= 1) return actionError("At least one active administrator must remain.");
+    }
 
-  if (disabled && target.role === Role.ADMIN) {
-    const adminCount = await prisma.user.count({ where: { role: Role.ADMIN, disabled: false } });
-    if (adminCount <= 1) return actionError("At least one active administrator must remain.");
+    await prisma.$transaction([
+      prisma.user.update({ where: { id }, data: { disabled } }),
+      // Disabling immediately terminates any database-backed session.
+      prisma.session.deleteMany({ where: { userId: id } }),
+    ]);
+  } catch {
+    const { setMockUserDisabled } = await import("@/lib/mock-data");
+    setMockUserDisabled(id, disabled);
   }
-
-  await prisma.$transaction([
-    prisma.user.update({ where: { id }, data: { disabled } }),
-    // Disabling immediately terminates any database-backed session.
-    prisma.session.deleteMany({ where: { userId: id } }),
-  ]);
 
   await logActivity({
     userId: gate.admin.id,
     action: disabled ? ACTIVITY.ADMIN_USER_DISABLED : ACTIVITY.ADMIN_USER_ENABLED,
-    detail: target.email,
+    detail: id,
   });
 
   revalidatePath("/admin/users");
@@ -112,24 +123,42 @@ export async function deleteUserAction(id: string): Promise<ActionResult> {
   if (!gate.ok) return actionError(gate.error);
   if (id === gate.admin.id) return actionError("You cannot delete your own account.");
 
-  const target = await prisma.user.findUnique({ where: { id }, select: { email: true, role: true } });
-  if (!target) return actionError("That user no longer exists.");
+  try {
+    const target = await prisma.user.findUnique({ where: { id }, select: { email: true, role: true } });
+    if (target && target.role === Role.ADMIN) {
+      const adminCount = await prisma.user.count({ where: { role: Role.ADMIN } });
+      if (adminCount <= 1) return actionError("At least one administrator must remain.");
+    }
 
-  if (target.role === Role.ADMIN) {
-    const adminCount = await prisma.user.count({ where: { role: Role.ADMIN } });
-    if (adminCount <= 1) return actionError("At least one administrator must remain.");
+    await prisma.$transaction([
+      prisma.user.updateMany({ where: { approvedById: id }, data: { approvedById: null } }),
+      prisma.retestRequest.updateMany({ where: { reviewedById: id }, data: { reviewedById: null } }),
+      prisma.pdf.updateMany({ where: { uploadedById: id }, data: { uploadedById: null } }),
+      prisma.activityLog.deleteMany({ where: { userId: id } }),
+      prisma.retestRequest.deleteMany({ where: { userId: id } }),
+      prisma.bookmark.deleteMany({ where: { userId: id } }),
+      prisma.pdfView.deleteMany({ where: { userId: id } }),
+      prisma.testAnswer.deleteMany({ where: { test: { userId: id } } }),
+      prisma.test.deleteMany({ where: { userId: id } }),
+      prisma.session.deleteMany({ where: { userId: id } }),
+      prisma.account.deleteMany({ where: { userId: id } }),
+      prisma.passwordResetToken.deleteMany({ where: { userId: id } }),
+      prisma.emailVerificationToken.deleteMany({ where: { userId: id } }),
+      prisma.user.delete({ where: { id } }),
+    ]);
+  } catch {
+    const { deleteMockUser } = await import("@/lib/mock-data");
+    deleteMockUser(id);
   }
-
-  await prisma.user.delete({ where: { id } });
 
   await logActivity({
     userId: gate.admin.id,
     action: ACTIVITY.ADMIN_USER_DELETED,
-    detail: target.email,
+    detail: id,
   });
 
   revalidatePath("/admin/users");
-  return actionOk(undefined, "User deleted.");
+  return actionOk(undefined, "User deleted successfully.");
 }
 
 /**

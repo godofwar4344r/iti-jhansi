@@ -1,15 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  ListChecks,
-  Shuffle,
-  Target,
-  TimerReset,
-} from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 import { currentUser } from "@/lib/auth";
 import {
@@ -38,14 +30,7 @@ import {
 
 export const metadata: Metadata = { title: "Tests" };
 
-const RULES = [
-  { icon: ListChecks, title: `${TEST_QUESTION_COUNT} questions`, body: "Multiple choice and true/false, one mark each." },
-  { icon: Clock, title: "30 minutes", body: "The clock is kept on the server and cannot be reset." },
-  { icon: Shuffle, title: "Randomised", body: "Questions and their options are shuffled per attempt." },
-  { icon: Target, title: `${PASS_PERCENTAGE}% to pass`, body: `That is ${Math.ceil((PASS_PERCENTAGE / 100) * TEST_QUESTION_COUNT)} correct out of ${TEST_QUESTION_COUNT}.` },
-  { icon: TimerReset, title: "Auto submit", body: "When time runs out, your answers are graded as they stand." },
-  { icon: CheckCircle2, title: "No negative marking", body: "Wrong answers cost nothing, so never leave a blank." },
-];
+import { TestRules } from "@/components/tests/test-rules";
 
 export default async function TestsPage() {
   const user = await currentUser();
@@ -63,7 +48,7 @@ export default async function TestsPage() {
 
   const enoughQuestions = bankSize >= TEST_QUESTION_COUNT;
   const canStart = retest.eligibility.allowed;
-  const blockedMessage = retest.eligibility.allowed ? null : retest.eligibility.message;
+  const blockedMessage = retest.eligibility.allowed ? null : ("message" in retest.eligibility ? (retest.eligibility as any).message : null);
 
   return (
     <div className="space-y-6">
@@ -103,24 +88,7 @@ export default async function TestsPage() {
         </Alert>
       ) : null}
 
-      <section aria-labelledby="rules-heading">
-        <h2 id="rules-heading" className="sr-only">
-          Test rules
-        </h2>
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {RULES.map((rule) => (
-            <li key={rule.title}>
-              <Card className="h-full p-5">
-                <span className="mb-3 grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
-                  <rule.icon className="h-5 w-5" aria-hidden />
-                </span>
-                <h3 className="font-semibold">{rule.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{rule.body}</p>
-              </Card>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <TestRules />
 
       <RetestPanel
         canRequest={retest.eligibility.allowed === false && retest.eligibility.reason === "needs-request"}
